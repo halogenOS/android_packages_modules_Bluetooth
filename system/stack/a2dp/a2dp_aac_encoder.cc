@@ -268,8 +268,9 @@ static void a2dp_aac_encoder_update(A2dpCodecConfig* a2dp_codec_config, bool* p_
   // Calculate the bit rate from MTU and sampling frequency
   aac_peak_bit_rate = A2DP_ComputeMaxBitRateAac(p_codec_info, a2dp_aac_encoder_cb.TxAaMtuSize);
   aac_param_value = std::min(aac_param_value, aac_peak_bit_rate);
-  log::info("MTU = {} Sampling Frequency = {} Bit Rate = {}", a2dp_aac_encoder_cb.TxAaMtuSize,
-            aac_sampling_freq, aac_param_value);
+  log::info("MTU = {} Sampling Frequency = {} Negotiated Bit Rate = {} Peak Bit Rate = {} Effective Bit Rate = {}",
+            a2dp_aac_encoder_cb.TxAaMtuSize, aac_sampling_freq,
+            A2DP_GetBitRateAac(p_codec_info), aac_peak_bit_rate, aac_param_value);
   if (aac_param_value == -1) {
     log::error("Cannot set AAC parameter AACENC_BITRATE: invalid codec bit rate");
     return;  // TODO: Return an error?
@@ -645,14 +646,7 @@ static uint16_t adjust_effective_mtu(const tA2DP_ENCODER_INIT_PEER_PARAMS& peer_
   }
   log::verbose("original AVDTP MTU size: {}", mtu_size);
   if (peer_params.is_peer_edr && !peer_params.peer_supports_3mbps) {
-    // This condition would be satisfied only if the remote device is
-    // EDR and supports only 2 Mbps, but the effective AVDTP MTU size
-    // exceeds the 2DH5 packet size.
     log::verbose("The remote device is EDR but does not support 3 Mbps");
-    if (mtu_size > MAX_2MBPS_AVDTP_MTU) {
-      log::warn("Restricting AVDTP MTU size from {} to {}", mtu_size, MAX_2MBPS_AVDTP_MTU);
-      mtu_size = MAX_2MBPS_AVDTP_MTU;
-    }
   }
   return mtu_size;
 }
