@@ -689,7 +689,7 @@ static void aac_source_caps_initialize() {
   if (aac_source_caps_configured) {
     return;
   }
-  a2dp_aac_source_caps = osi_property_get_bool("persist.bluetooth.a2dp_aac.vbr_supported", false)
+  a2dp_aac_source_caps = osi_property_get_bool("persist.bluetooth.a2dp_aac.vbr_supported", true)
                                  ? a2dp_aac_vbr_source_caps
                                  : a2dp_aac_cbr_source_caps;
   aac_source_caps_configured = true;

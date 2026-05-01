@@ -35,6 +35,7 @@
 #include "common/time_util.h"
 #include "internal_include/bt_target.h"
 #include "osi/include/allocator.h"
+#include "osi/include/properties.h"
 #include "stack/include/bt_hdr.h"
 
 //
@@ -351,13 +352,26 @@ static void a2dp_aac_encoder_update(A2dpCodecConfig* a2dp_codec_config, bool* p_
     }
     aac_param_value = static_cast<uint8_t>(bitrate_mode) & ~A2DP_AAC_VARIABLE_BIT_RATE_MASK;
   }
-  log::info("AACENC_BITRATEMODE: {}", aac_param_value);
+  bool vbr_forced = false;
+  if (aac_param_value == 0 &&
+      osi_property_get_bool("persist.bluetooth.a2dp_aac.vbr_force", false)) {
+    aac_param_value = 5;
+    vbr_forced = true;
+  }
+  log::info("AACENC_BITRATEMODE: {} ({})", aac_param_value,
+            aac_param_value == 0 ? "CBR" : (vbr_forced ? "VBR forced" : "VBR negotiated"));
   aac_error =
           aacEncoder_SetParam(a2dp_aac_encoder_cb.aac_handle, AACENC_BITRATEMODE, aac_param_value);
   if (aac_error != AACENC_OK) {
     log::error("Cannot set AAC parameter AACENC_BITRATEMODE to {}: AAC error 0x{:x}",
                aac_param_value, aac_error);
     return;  // TODO: Return an error?
+  }
+
+  // Enable afterburner for improved encoding quality
+  aac_error = aacEncoder_SetParam(a2dp_aac_encoder_cb.aac_handle, AACENC_AFTERBURNER, 1);
+  if (aac_error != AACENC_OK) {
+    log::warn("Cannot enable AAC afterburner: AAC error 0x{:x}", aac_error);
   }
 
   // Mark the end of setting the encoder's parameters
